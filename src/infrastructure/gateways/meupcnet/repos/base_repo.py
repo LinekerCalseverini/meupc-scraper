@@ -1,16 +1,22 @@
 from collections.abc import Callable
+
 from typing import Generic, TypeVar
+
 
 from domain.interfaces.product_repo import Repository
 
+
 from infrastructure.http.http_client import HttpClient
+
 from infrastructure.config.settings import ApiConfig
+
 
 from infrastructure.gateways.meupcnet.adapters.base import (
     build_headers,
     build_cookies,
     build_form_token,
 )
+
 
 T = TypeVar("T")
 
@@ -20,8 +26,7 @@ class BaseRepo(Repository, Generic[T]):
         self,
         config: ApiConfig,
         http_client: HttpClient,
-        single_adapter: Callable[[dict], T],
-        many_adapter: Callable[[list[dict]], list[T]],
+        adapter: Callable[[list[dict]], list[T]],
         params: dict | None = None,
     ):
         self._http_client = http_client
@@ -32,8 +37,7 @@ class BaseRepo(Repository, Generic[T]):
         self._cookies = build_cookies(self._csrf_token, self._meupc_token)
         self._form_token = build_form_token(self._csrf_token)
         self._params = params
-        self._single_adapter = single_adapter
-        self._many_adapter = many_adapter
+        self._adapter = adapter
 
     async def get_all(self) -> list[T]:
         payload = {
@@ -42,6 +46,16 @@ class BaseRepo(Repository, Generic[T]):
             "headers": self._headers,
             "content": self._form_token,
         }
+
         if self._params:
             payload["params"] = self._params
-        return self._many_adapter(await self._http_client.post(**payload))
+
+        return self._adapter(
+            await self._http_client.post(**payload).json().get("peca", [])
+        )
+
+    async def add(self, entity: T) -> None:
+        return
+
+    async def add_many(self, entities: list[T]) -> None:
+        return
