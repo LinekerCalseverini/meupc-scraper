@@ -1,7 +1,7 @@
 from typing import Callable
-from domain.entities.storage import Storage
+from domain.entities.products import Storage
 
-from infrastructure.gateways.meupcnet.base_repo import BaseRepo
+from infrastructure.gateways.meupcnet.repos.base_repo import BaseRepo
 from infrastructure.http.http_client import HttpClient
 from infrastructure.config.settings import ApiConfig
 
@@ -27,3 +27,4 @@ class MeupcnetStorageRepo(BaseRepo[Storage]):
             params=safe_params,
         )
         self._url = f"{self._url}/armazenamentos"
+        self._path = f"{self._path}/armazenamentos"

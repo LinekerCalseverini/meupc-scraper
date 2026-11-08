@@ -15,7 +15,7 @@ class ApiConfig(BaseSettings):
     url: str
     csrf_token: str
     meupc_token: str
-    storage_api: StorageApiConfig = Field(default_factory=StorageApiConfig)
+    storage: StorageApiConfig = Field(default_factory=StorageApiConfig)
     model_config = SettingsConfigDict(env_prefix="API_")
 
 

@@ -1,5 +1,5 @@
 from domain.entities.storage.types import StorageInterfaces
-from domain.entities.storage.products import Storage
+from domain.entities.products import Storage
 from infrastructure.gateways.meupcnet.models.storage import StorageApiResponseModel
 
 # Define the translation map as a constant dictionary

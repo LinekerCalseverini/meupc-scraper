@@ -2,6 +2,7 @@ import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
 from infrastructure.config.loaders.yaml import YamlConfigLoader
 from infrastructure.config.errors import ConfigError
+from domain.entities.storage.types import StorageInterfaces
 
 
 async def test_yaml_config_loader(fs: FakeFilesystem) -> None:
@@ -12,6 +13,10 @@ async def test_yaml_config_loader(fs: FakeFilesystem) -> None:
             url: https://example.com
             csrf_token: abc123
             meupc_token: def456
+            storage:
+                capacity_gb_min: 900
+                capacity_gb_max: 1100
+                storage_interface: m2-pcie-40-x4
         http:
             timeout: 10
             retries: 3
@@ -26,6 +31,9 @@ async def test_yaml_config_loader(fs: FakeFilesystem) -> None:
     assert config.http.timeout == int(10)
     assert config.http.retries == int(3)
     assert config.http.rate_limit == int(5)
+    assert config.api.storage.capacity_gb_min == int(900)
+    assert config.api.storage.capacity_gb_max == int(1100)
+    assert config.api.storage.storage_interface == StorageInterfaces.M2_PCIE_40_X4
 
 
 async def test_yaml_config_loader_defaults(fs: FakeFilesystem) -> None:

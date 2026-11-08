@@ -1,7 +1,7 @@
-def build_headers() -> dict[str, str]:
+def build_headers(api_path: str) -> dict[str, str]:
     return {
         "accept-encoding": "gzip, deflate, br, zstd",
-        "referer": "https://meupc.net/armazenamentos",
+        "referer": f"https://meupc.net{api_path}",
         "Content-Type": "multipart/form-data; boundary=----WebKitFormBoundary",
     }
 
