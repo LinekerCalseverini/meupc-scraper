@@ -1,6 +1,5 @@
 from enum import Enum
 
 
-class StorageType(str, Enum):
-    SSD = "SSD"
-    HDD = "HDD"
+class StorageInterfaces(str, Enum):
+    M2_PCIE_40_X4 = "m2-pcie-40-x4"
