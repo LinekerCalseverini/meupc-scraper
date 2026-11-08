@@ -1,0 +1,53 @@
+[project]
+name = "meupc-net"
+version = "0.1.0"
+description = "Command-line utilities with local DB storage"
+readme = "README.md"
+authors = [
+    { name = "LinekerCalseverini", email = "lineker.calseverini@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "aiofiles>=25.1.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+meupc-net = "meupc_net:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py315"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors (autopep8 / PEP 8 style rules)
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (Flake8 core code correctness)
+    "C90", # McCabe complexity (Flake8 complexity checks)
+    "PL",  # Pylint checks (PLC, PLE, PLR, PLW)
+]
+ignore = []
+
+[tool.mypy]
+python_version = "3.15"
+strict = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[dependency-groups]
+dev = [
+    "pyfakefs>=6.3.2",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+]
