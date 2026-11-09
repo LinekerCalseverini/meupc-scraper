@@ -1,93 +1,62 @@
 import asyncio
-
+from unittest.mock import AsyncMock
 import pytest
 
 from infrastructure.http.rate_limited_client import RateLimitedClient
 
-
-class MockHttpClient:
-    def __init__(self, raise_exc=None):
-
-        self.requests = []
-
-        self.raise_exc = raise_exc
-
-    async def request(self, method, url, **kwargs):
-
-        self.requests.append((method, url, kwargs))
-
-        if self.raise_exc:
-            raise self.raise_exc
-
-        return f"Response for {method} {url}"
+TOTAL_BATCH_REQUESTS = 7
 
 
-@pytest.mark.asyncio
-async def test_batch_rate_limited_client_methods():
+@pytest.fixture
+def rate_limited_client_factory():
+    def _create(side_effect=None):
+        mock_client = AsyncMock()
+        if side_effect:
+            mock_client.request.side_effect = side_effect
+        else:
+            mock_client.request.side_effect = lambda method, url, **kwargs: (
+                f"Response for {method} {url}"
+            )
 
-    mock_client = MockHttpClient()
+        return RateLimitedClient(
+            client=mock_client, requests_per_second=5, time_window=0.01
+        )
 
-    # Use a very short time window (0.01s) so tests run instantly
-    client = RateLimitedClient(
-        client=mock_client, requests_per_second=5, time_window=0.01
-    )
-
-    # Test all HTTP verb wrapper methods
-    assert (
-        await client.get("https://example.com/get")
-        == "Response for GET https://example.com/get"
-    )
-    assert (
-        await client.post("https://example.com/post", json={"data": 1})
-        == "Response for POST https://example.com/post"
-    )
-    assert (
-        await client.put("https://example.com/put")
-        == "Response for PUT https://example.com/put"
-    )
-    assert (
-        await client.delete("https://example.com/delete")
-        == "Response for DELETE https://example.com/delete"
-    )
-    assert (
-        await client.patch("https://example.com/patch")
-        == "Response for PATCH https://example.com/patch"
-    )
-
-    assert len(mock_client.requests) == int(5)
+    return _create
 
 
-@pytest.mark.asyncio
-async def test_batch_rate_limited_client_batching():
+@pytest.mark.parametrize("method", ["get", "post", "put", "delete", "patch"])
+async def test_rate_limited_client_method(rate_limited_client_factory, method):
+    client = rate_limited_client_factory()
+    url = f"https://example.com/{method}"
 
-    mock_client = MockHttpClient()
+    if method == "post":
+        response = await getattr(client, method)(url, json={"data": 1})
+    else:
+        response = await getattr(client, method)(url)
 
-    # Limit to 3 requests per window, forcing them to span across multiple ticks
-    client = RateLimitedClient(
-        client=mock_client, requests_per_second=3, time_window=0.01
-    )
+    assert response == f"Response for {method.upper()} {url}"
+    client._client.request.assert_awaited_once()
 
-    # Fire 7 requests concurrently
 
-    tasks = [client.get(f"https://example.com/{i}") for i in range(7)]
+async def test_rate_limited_client_batching(rate_limited_client_factory):
+    client = rate_limited_client_factory()
 
+    # Fire 7 requests concurrently, limiting to 3 requests per window
+    tasks = [
+        client.get(f"https://example.com/{i}") for i in range(TOTAL_BATCH_REQUESTS)
+    ]
     results = await asyncio.gather(*tasks)
 
-    assert len(results) == int(7)
-
-    assert len(mock_client.requests) == int(7)
+    assert len(results) == TOTAL_BATCH_REQUESTS
+    assert client._client.request.await_count == TOTAL_BATCH_REQUESTS
 
     for i, res in enumerate(results):
         assert res == f"Response for GET https://example.com/{i}"
 
 
-@pytest.mark.asyncio
-async def test_batch_rate_limited_client_exception_propagation():
-
-    mock_client = MockHttpClient(raise_exc=ValueError("Underlying failure"))
-    client = RateLimitedClient(
-        client=mock_client, requests_per_second=5, time_window=0.01
-    )
+async def test_rate_limited_client_exception_propagation(rate_limited_client_factory):
+    client = rate_limited_client_factory(side_effect=ValueError("Underlying failure"))
 
     with pytest.raises(ValueError, match="Underlying failure"):
         await client.get("https://example.com/error")

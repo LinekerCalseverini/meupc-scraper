@@ -49,7 +49,8 @@ async def test_async_http_client_methods(client_factory, method):
 
 @pytest.mark.parametrize("exc_class", [TimeoutException, TransportError, EOFError])
 async def test_async_http_client_retries_and_succeeds(client_factory, exc_class):
-    # Fail the first attempt with an exception, succeed on the second with a mock response
+    # Fail the first attempt with an exception, succeed on the second with a mock
+    # response
     mock_response = MagicMock()
     client = client_factory(side_effect=[exc_class("Transient error"), mock_response])
 
