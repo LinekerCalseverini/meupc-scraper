@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from httpx import TimeoutException, TransportError, HTTPStatusError, Request, Response
 
 from infrastructure.http.async_http_client import AsyncHttpClient
@@ -8,69 +9,67 @@ from infrastructure.http.errors import (
     HttpClientError,
 )
 
+EXPECTED_ATTEMPTS_SUCCESS = 2
+EXPECTED_ATTEMPTS_EXHAUSTED = 3
 
-def generate_mock_client(
-    raise_exc_sequence: list, raise_on_status: Exception | None = None
-) -> AsyncHttpClient:
-    class MockResponse:
-        def raise_for_status(self):
+
+@pytest.fixture
+def client_factory():
+    def _create(
+        side_effect: list | None = None, raise_on_status: Exception | None = None
+    ):
+        mock_client = MagicMock()
+        mock_request = AsyncMock()
+
+        if side_effect:
+            mock_request.side_effect = side_effect
+        else:
+            mock_response = MagicMock()
             if raise_on_status:
-                raise raise_on_status
+                mock_response.raise_for_status.side_effect = raise_on_status
+            mock_request.return_value = mock_response
 
-    class MockClient:
-        def __init__(self):
-            self.method_used = None
-            self.url_used = None
-            self.attempts = 0
+        mock_client.request = mock_request
+        return AsyncHttpClient(timeout=1, retries=3, backoff=0, client=mock_client)
 
-        async def request(self, method: str, url: str, **kwargs):
-            self.attempts += 1
-            current_exc = raise_exc_sequence.pop(0) if raise_exc_sequence else None
-
-            if current_exc:
-                raise current_exc
-
-            self.method_used = method
-            self.url_used = url
-            return MockResponse()
-
-    return AsyncHttpClient(timeout=1, retries=3, backoff=0, client=MockClient())
+    return _create
 
 
-async def test_async_http_client():
-    client = generate_mock_client([])
-    cases = ["get", "post", "put", "delete", "patch"]
+@pytest.mark.parametrize("method", ["get", "post", "put", "delete", "patch"])
+async def test_async_http_client_methods(client_factory, method):
+    client = client_factory()
+    await getattr(client, method)("https://example.com")
 
-    for case in cases:
-        # Reset attempts sequence for each case
-        client._client.attempts = 0
-        await getattr(client, case)("https://example.com")
-
-        assert client._client.method_used == case.upper()
-        assert client._client.url_used == "https://example.com"
+    mock_client = client._client
+    mock_client.request.assert_awaited_once()
+    args, _ = mock_client.request.call_args
+    assert args[0] == method.upper()
+    assert args[1] == "https://example.com"
 
 
 @pytest.mark.parametrize("exc_class", [TimeoutException, TransportError, EOFError])
-async def test_async_http_client_retries_and_succeeds(exc_class):
-    # Fail the first attempt, succeed on the second
-    client = generate_mock_client([exc_class("Transient error"), None])
+async def test_async_http_client_retries_and_succeeds(client_factory, exc_class):
+    # Fail the first attempt with an exception, succeed on the second with a mock response
+    mock_response = MagicMock()
+    client = client_factory(side_effect=[exc_class("Transient error"), mock_response])
 
     response = await client.get("https://example.com")
 
     assert response is not None
-    assert client._client.attempts == int(2)
-    assert client._client.method_used == "GET"
+    assert client._client.request.call_count == EXPECTED_ATTEMPTS_SUCCESS
+    args, _ = client._client.request.call_args
+    assert args[0] == "GET"
 
 
 @pytest.mark.parametrize("exc_class", [TimeoutException, TransportError, EOFError])
-async def test_async_http_client_exhausts_retries(exc_class):
+async def test_async_http_client_exhausts_retries(client_factory, exc_class):
     # Fail all attempts (retries=3 means 3 attempts total)
-    client = generate_mock_client([exc_class("Persistent error")] * 3)
+    client = client_factory(side_effect=[exc_class("Persistent error")] * 3)
 
     with pytest.raises(HttpClientRetryError) as exc_info:
         await client.get("https://example.com")
 
-    assert client._client.attempts == int(3)
+    assert client._client.request.call_count == EXPECTED_ATTEMPTS_EXHAUSTED
 
     # TimeoutException gets mapped to HttpClientTimeoutError, others keep their type
     if exc_class is TimeoutException:
@@ -90,16 +89,18 @@ async def test_async_http_client_exhausts_retries(exc_class):
         ),
     ],
 )
-async def test_async_http_client_does_not_retry_on_non_retriable_errors(exc_instance):
-    # If it's an HTTPStatusError, we pass it via raise_on_status so raise_for_status()
-    # triggers it
+async def test_async_http_client_does_not_retry_on_non_retriable_errors(
+    client_factory, exc_instance
+):
     if isinstance(exc_instance, HTTPStatusError):
-        client = generate_mock_client([], raise_on_status=exc_instance)
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = exc_instance
+        client = client_factory(side_effect=[mock_response])
     else:
-        client = generate_mock_client([exc_instance])
+        client = client_factory(side_effect=[exc_instance])
 
     with pytest.raises(HttpClientError):
         await client.get("https://example.com")
 
     # Verify it failed on the very first try and did not loop/retry
-    assert client._client.attempts == 1
+    assert client._client.request.call_count == 1
