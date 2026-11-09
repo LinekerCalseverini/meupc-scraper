@@ -11,8 +11,6 @@ async def test_yaml_config_loader(fs: FakeFilesystem) -> None:
         contents="""
         api:
             url: https://example.com
-            csrf_token: abc123
-            meupc_token: def456
             storage:
                 capacity_gb_min: 900
                 capacity_gb_max: 1100
@@ -26,8 +24,6 @@ async def test_yaml_config_loader(fs: FakeFilesystem) -> None:
     loader = YamlConfigLoader("config.yaml")
     config = await loader.load()
     assert config.api.url == "https://example.com"
-    assert config.api.csrf_token == "abc123"
-    assert config.api.meupc_token == "def456"
     assert config.http.timeout == int(10)
     assert config.http.retries == int(3)
     assert config.http.rate_limit == int(5)
@@ -42,8 +38,6 @@ async def test_yaml_config_loader_defaults(fs: FakeFilesystem) -> None:
         contents="""
         api:
             url: https://example.com
-            csrf_token: abc123
-            meupc_token: def456
     """,
     )
     loader = YamlConfigLoader("config.yaml")
@@ -59,7 +53,9 @@ async def test_yaml_config_loader_missing_fields(fs: FakeFilesystem) -> None:
         "config.yaml",
         contents="""
         api:
-            meupc_token: def456
+            storage:
+                capacity_gb_min: 900
+                capacity_gb_max: 1100
     """,
     )
     loader = YamlConfigLoader("config.yaml")
@@ -71,4 +67,3 @@ async def test_yaml_config_loader_missing_fields(fs: FakeFilesystem) -> None:
     # Verify the error message contains the specific missing fields
     error_message = str(exc_info.value)
     assert "api.url" in error_message
-    assert "api.csrf_token" in error_message

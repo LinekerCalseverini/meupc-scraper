@@ -42,11 +42,13 @@ class BaseRepo(Repository, Generic[T]):
         self._http_client = http_client
         self._url = config.url
         self._path = ""
-        # self._csrf_token = config.csrf_token
-        # self._meupc_token = config.meupc_token
+
+        # Session
         self._logged_in = False
         self._csrf_token = None
         self._meupc_token = None
+
+        # Request
         self._headers = {}
         self._cookies = None
         self._form_token = None
@@ -60,20 +62,30 @@ class BaseRepo(Repository, Generic[T]):
         """
         if not self._logged_in:
             response = await self._http_client.get(self._url)
+
             self._csrf_token = response.cookies.get("ci_csrf_cookie")
             if not self._csrf_token:
                 raise MeuPCUnexpectedResponseError("Missing ci_csrf_cookie")
+
             self._meupc_token = response.cookies.get("meupcnet")
             if not self._meupc_token:
                 raise MeuPCUnexpectedResponseError("Missing meupcnet cookie")
+
             self._cookies = build_cookies(self._csrf_token, self._meupc_token)
             self._form_token = build_form_token(self._csrf_token)
             self._logged_in = True
 
     async def get_all(self) -> list[T]:
+        # Ensure login happens before building headers/payloads
+        await self._ensure_logged_in()
+
         self._headers = build_headers(self._path)
+
+        # Keep URL clean: e.g., {self._url}/api/{self._path}
+        # Ensure self._path doesn't have leading/trailing double slashes
+        clean_path = self._path.strip("/")
         payload = {
-            "url": f"{self._url}/api/{self._path}",
+            "url": f"{self._url}/api/{clean_path}",
             "cookies": self._cookies,
             "headers": self._headers,
             "content": self._form_token,
@@ -82,9 +94,8 @@ class BaseRepo(Repository, Generic[T]):
         if self._params:
             payload["params"] = self._params
 
-        return self._adapter(
-            (await self._http_client.post(**payload)).json().get("peca", [])
-        )
+        response = await self._http_client.post(**payload)
+        return self._adapter(response.json().get("peca", []))
 
     async def add(self, entity: T) -> None:
         return

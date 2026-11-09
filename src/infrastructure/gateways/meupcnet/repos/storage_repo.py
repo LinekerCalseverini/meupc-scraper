@@ -26,5 +26,6 @@ class MeupcnetStorageRepo(BaseRepo[Storage]):
             adapter=adapter,
             params=safe_params,
         )
-        self._url = f"{self._url}/armazenamentos"
-        self._path = f"{self._path}/armazenamentos"
+        # Only set the path segment, don't mess with self._url manually
+        # unless the base domain itself changes per repo.
+        self._path = "armazenamentos"
