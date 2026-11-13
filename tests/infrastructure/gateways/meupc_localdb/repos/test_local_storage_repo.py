@@ -19,7 +19,7 @@ async def test_local_storage_repo_add_and_get_all(local_db):
     async with local_db.get_session() as session:
         repo = LocalStorageRepo(session)
 
-        items = await repo.get_all()
+        items = [item async for item in repo.get_all()]
         assert len(items) == 0
 
         storage_entity = Storage(
@@ -40,7 +40,7 @@ async def test_local_storage_repo_add_and_get_all(local_db):
         # Test single add contract method
         await repo.add(storage_entity)
 
-        items = await repo.get_all()
+        items = [item async for item in repo.get_all()]
         assert len(items) == 1
         assert items[0].hash_ == "hash_xyz"
         assert items[0].price_cents == INITIAL_PRICE_CENTS
@@ -63,7 +63,7 @@ async def test_local_storage_repo_add_and_get_all(local_db):
         # Test add_many contract method with upsert behavior
         await repo.add_many([updated_entity])
 
-        items = await repo.get_all()
+        items = [item async for item in repo.get_all()]
         assert len(items) == 1
         assert items[0].price_cents == UPDATED_PRICE_CENTS
         assert items[0].sponsored is False

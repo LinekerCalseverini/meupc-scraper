@@ -27,7 +27,6 @@ def sample_adapter():
 
 @pytest.mark.asyncio
 async def test_ensure_logged_in_success(api_config, http_client, sample_adapter):
-    # Mock GET response containing the required cookies
     mock_response = MagicMock()
     mock_response.cookies = {
         "ci_csrf_cookie": "dummy_csrf_token",
@@ -46,7 +45,6 @@ async def test_ensure_logged_in_success(api_config, http_client, sample_adapter)
 
 @pytest.mark.asyncio
 async def test_ensure_logged_in_missing_cookie(api_config, http_client, sample_adapter):
-    # Mock GET response missing 'meupcnet' cookie
     mock_response = MagicMock()
     mock_response.cookies = {"ci_csrf_cookie": "dummy_csrf_token"}
     http_client.get = AsyncMock(return_value=mock_response)
@@ -59,14 +57,12 @@ async def test_ensure_logged_in_missing_cookie(api_config, http_client, sample_a
 
 @pytest.mark.asyncio
 async def test_get_all_success(api_config, http_client, sample_adapter):
-    # Setup login response
     login_response = MagicMock()
     login_response.cookies = {
         "ci_csrf_cookie": "csrf_123",
         "meupcnet": "net_456",
     }
 
-    # Setup POST response for data fetching
     post_response = MagicMock()
     post_response.json.return_value = {"peca": [{"id": 10}, {"id": 20}]}
 
@@ -76,7 +72,7 @@ async def test_get_all_success(api_config, http_client, sample_adapter):
     repo = BaseRepo(api_config, http_client, sample_adapter)
     repo._path = "test-path"
 
-    result = await repo.get_all()
+    result = [item async for item in repo.get_all()]
 
     assert result == [10, 20]
     http_client.get.assert_awaited_once()
