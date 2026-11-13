@@ -10,6 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "aiofiles>=25.1.0",
     "aiosqlite>=0.22.1",
+    "alembic>=1.20.1",
     "async-typer>=0.27.2",
     "httpx>=0.28.1",
     "pydantic>=2.14.3",
