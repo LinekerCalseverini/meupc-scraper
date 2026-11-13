@@ -1,3 +1,5 @@
+from unittest.mock import AsyncMock, MagicMock
+
 from collections.abc import Sequence
 from use_cases.sync_repos import SyncReposUseCase
 from domain.entities.products import Product
@@ -75,3 +77,22 @@ async def test_sync_repo_update_without_overwrite():
         skuList[2],
         skuList[3],
     }
+
+
+async def test_sync_repos_flushes_partial_batch() -> None:
+    items = ["item1", "item2", "item3"]
+
+    async def mock_get_all():
+        for item in items:
+            yield item
+
+    source_repo = MagicMock()
+    source_repo.get_all = mock_get_all
+
+    target_repo = MagicMock()
+    target_repo.add_many = AsyncMock()
+
+    use_case = SyncReposUseCase(source_repo=source_repo, target_repo=target_repo)
+    await use_case.execute()
+
+    target_repo.add_many.assert_awaited_once_with(items)

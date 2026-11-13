@@ -6,7 +6,6 @@ from infrastructure.gateways.meupc_localdb.database import LocalDatabase
 from infrastructure.gateways.meupcnet.repos.storage_repo import MeupcnetStorageRepo
 from infrastructure.config.loaders.yaml import YamlConfigLoader
 from infrastructure.http.async_http_client import AsyncHttpClient
-from infrastructure.http.rate_limited_client import RateLimitedClient
 
 storage = AsyncTyper(name="storage", help="Manage storage products.")
 

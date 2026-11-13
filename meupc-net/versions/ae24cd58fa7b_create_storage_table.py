@@ -1,7 +1,7 @@
 """create storage table
 
 Revision ID: ae24cd58fa7b
-Revises: 
+Revises:
 Create Date: 2026-11-13 01:59:39.259175
 
 """
