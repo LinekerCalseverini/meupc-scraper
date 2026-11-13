@@ -1,3 +1,5 @@
+import logging
+
 from domain.entities.storage.types import StorageInterfaces
 from domain.entities.products import Storage
 from infrastructure.gateways.meupcnet.models.storage import StorageApiResponseModel
@@ -8,6 +10,8 @@ from infrastructure.gateways.meupcnet.models.storage import StorageApiResponseMo
 _STORAGE_INTERFACE_EXTERNAL_MAP: dict[StorageInterfaces, int] = {
     StorageInterfaces.M2_PCIE_40_X4: 42,
 }
+
+logger = logging.getLogger(__name__)
 
 
 def to_meupc_storage_interface(storage_interface: StorageInterfaces) -> int | None:
@@ -78,4 +82,11 @@ def to_domain_storage(data: dict) -> Storage:
 
 
 def to_domain_storage_many(data: list[dict]) -> list[Storage]:
-    return [to_domain_storage(d) for d in data]
+    # return [to_domain_storage(d) for d in data]
+    result: list[Storage] = []
+    for d in data:
+        try:
+            result.append(to_domain_storage(d))
+        except Exception as e:
+            logger.error({"data": d, "error": e})
+    return result

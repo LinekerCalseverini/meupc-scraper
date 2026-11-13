@@ -89,7 +89,7 @@ class BaseRepo(Repository[T], Generic[T]):
         payload["params"]["page"] = 1
         response = await self._http_client.post(**payload)
         response_json = response.json()
-        response_count = response_json.get("total", 0)
+        response_count = int(response_json.get("total", 0))
 
         # Yield items from page 1
         for entity in self._adapter(response_json.get("peca", [])):

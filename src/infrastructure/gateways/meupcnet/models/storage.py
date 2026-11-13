@@ -7,13 +7,13 @@ class StorageApiResponseModel(BaseModel):
     formato: str
     tipo: str
     capacidade_padrao: int
-    leitura: int
-    gravacao: int
+    leitura: int | None = None
+    gravacao: int | None = None
     slug: str
     hash_: str = Field(alias="hash")
     preco: float | None = None
     preco_boleto: float | None = None
     patrocinado: int | None = None
-    small: str
-    medium: str
-    large: str
+    small: str | None = None
+    medium: str | None = None
+    large: str | None = None
