@@ -16,10 +16,14 @@ class MeupcnetStorageRepo(BaseRepo[Storage]):
         self,
         config: ApiConfig,
         http_client: HttpClient,
-        params: dict | None = None,
         adapter: Callable[[list[dict]], list[Storage]] = to_domain_storage_many,
     ):
-        safe_params = build_uri_params(**(params or {}))
+        params = config.storage
+        safe_params = build_uri_params(
+            capacity_gb_min=params.capacity_gb_min,
+            capacity_gb_max=params.capacity_gb_max,
+            storage_interface=params.storage_interface,
+        )
         super().__init__(
             config,
             http_client,

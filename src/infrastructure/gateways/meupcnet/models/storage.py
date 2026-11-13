@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class StorageApiResponseModel(BaseModel):
     descricao: str
     serie: str
-    formato: str
+    formato: str | None = None
     tipo: str
     capacidade_padrao: int
     leitura: int | None = None

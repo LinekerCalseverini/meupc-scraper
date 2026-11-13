@@ -14,7 +14,7 @@ class Product:
 class Storage(Product):
     description: str
     series: str
-    format_: str
+    format_: str | None
     type_: str
     capacity_gb: int
     read: int | None

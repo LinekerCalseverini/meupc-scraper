@@ -10,7 +10,7 @@ class StorageSqlModel(Base):
     slug: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     series: Mapped[str] = mapped_column(String, nullable=False)
-    format_: Mapped[str] = mapped_column("format", String, nullable=False)
+    format_: Mapped[str | None] = mapped_column("format", String, nullable=True)
     type_: Mapped[str] = mapped_column("type", String, nullable=False)
     capacity_gb: Mapped[int] = mapped_column(Integer, nullable=False)
     read: Mapped[int | None] = mapped_column(Integer, nullable=True)
