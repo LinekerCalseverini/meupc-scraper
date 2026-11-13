@@ -13,3 +13,4 @@ tmp/
 
 # Virtual environments
 .venv
+*.db
