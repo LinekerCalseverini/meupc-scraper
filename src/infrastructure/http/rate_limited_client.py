@@ -4,9 +4,10 @@ Defines a batch-throttled async HTTP client wrapper
 
 import asyncio
 from infrastructure.http.async_http_client import AsyncHttpClient
+from infrastructure.http.http_client import HttpClient
 
 
-class RateLimitedClient:
+class RateLimitedClient(HttpClient):
     def __init__(
         self, client=None, requests_per_second: int = 10, time_window: float = 1.0
     ) -> None:

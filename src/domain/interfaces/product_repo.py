@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, AsyncIterator, Sequence
 from domain.entities.products import Product, Storage
 
 T = TypeVar("T")
@@ -7,8 +7,8 @@ T = TypeVar("T")
 
 class Repository(ABC, Generic[T]):
     @abstractmethod
-    async def get_all(self) -> list[T]:
-        """Returns all entities"""
+    def get_all(self) -> AsyncIterator[T]:
+        """Returns an async iterator of all entities"""
         pass
 
     @abstractmethod
@@ -17,8 +17,8 @@ class Repository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    async def add_many(self, entities: list[T]) -> None:
-        """Upserts multiple entities"""
+    async def add_many(self, entities: Sequence[T]) -> None:
+        """Upserts multiple entities (accepts lists, sequences, etc.)"""
         pass
 
 
