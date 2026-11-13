@@ -17,8 +17,8 @@ class Storage(Product):
     format_: str
     type_: str
     capacity_gb: int
-    read: int
-    write: int
+    read: int | None
+    write: int | None
     price_cents: int
     price_slip_cents: int
     sponsored: bool
