@@ -16,12 +16,9 @@ async def sync_storage(config_path: str = "config.yaml") -> None:
     config = await YamlConfigLoader(path=config_path).load()
     remote_repo = MeupcnetStorageRepo(
         config=config.api,
-        http_client=RateLimitedClient(
-            client=AsyncHttpClient(
-                timeout=config.http.timeout,
-                retries=config.http.retries,
-            ),
-            requests_per_second=config.http.rate_limit,
+        http_client=AsyncHttpClient(
+            timeout=config.http.timeout,
+            retries=config.http.retries,
         ),
     )
     local_repo = LocalStorageRepo(session=LocalDatabase().get_session())
