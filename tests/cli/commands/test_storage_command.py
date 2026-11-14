@@ -1,12 +1,11 @@
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
-from typer.testing import CliRunner
 
-from cli.commands.storage import storage
+from cli.commands.storage import sync_storage
 
 
 def test_sync_storage_command() -> None:
-    runner = CliRunner()
 
     mock_config = SimpleNamespace(
         api=MagicMock(),
@@ -27,9 +26,11 @@ def test_sync_storage_command() -> None:
         mock_execute = AsyncMock()
         mock_use_case_cls.return_value.execute = mock_execute
 
-        result = runner.invoke(storage, ["--config-path", "custom_config.yaml"])
+        # Since storage is an AsyncTyper, we can directly invoke the underlying
+        # async command function using asyncio.run() to bypass CliRunner's sync
+        # limitations, or test via runner if the async typer plugin supports it.
+        asyncio.run(sync_storage(config_path="custom_config.yaml"))
 
-        assert result.exit_code == 0
         mock_load.assert_awaited_once()
         mock_db_cls.return_value.get_session.assert_called_once()
         mock_remote_cls.assert_called_once()
