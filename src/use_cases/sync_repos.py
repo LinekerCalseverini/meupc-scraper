@@ -2,14 +2,14 @@
 Defines a repo synchronization use case
 """
 
-from typing import Generic, TypeVar
-from domain.interfaces.product_repo import Repository
-
-T = TypeVar("T")
+from typing import Generic
+from domain.interfaces.product_repo import ProductRepo, T
 
 
 class SyncReposUseCase(Generic[T]):
-    def __init__(self, source_repo: Repository[T], target_repo: Repository[T]) -> None:
+    def __init__(
+        self, source_repo: ProductRepo[T], target_repo: ProductRepo[T]
+    ) -> None:
         """
         Constructor
         """

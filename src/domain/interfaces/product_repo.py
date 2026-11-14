@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
+
 from typing import Generic, TypeVar, AsyncIterator, Sequence
+
 from domain.entities.products import Product, Storage
 
-T = TypeVar("T")
+
+T = TypeVar("T", bound=Product)
 
 
-class Repository(ABC, Generic[T]):
+class ProductRepo(ABC, Generic[T]):
     @abstractmethod
     def get_all(self) -> AsyncIterator[T]:
         """Returns an async iterator of all entities"""
@@ -22,9 +25,5 @@ class Repository(ABC, Generic[T]):
         pass
 
 
-class ProductRepo(Repository[Product], ABC):
-    pass
-
-
-class StorageRepo(Repository[Storage], ABC):
+class StorageRepo(ProductRepo[Storage], ABC):
     pass

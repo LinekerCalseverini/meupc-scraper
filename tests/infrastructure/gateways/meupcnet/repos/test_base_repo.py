@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from infrastructure.gateways.meupcnet.repos.base_repo import (
     BaseRepo,
-    MeuPCUnexpectedResponseError,
 )
+from infrastructure.gateways.meupcnet.errors import MeuPCUnexpectedResponseError
 from infrastructure.config.settings import ApiConfig
 from infrastructure.http.http_client import HttpClient
 

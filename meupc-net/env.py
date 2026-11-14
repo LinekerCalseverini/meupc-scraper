@@ -7,6 +7,9 @@ from alembic import context
 
 from infrastructure.gateways.meupc_localdb.database import Base
 
+import infrastructure.gateways.meupc_localdb.models.storage
+import infrastructure.gateways.meupc_localdb.models.price_history  # noqa
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

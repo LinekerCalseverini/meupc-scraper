@@ -1,16 +1,10 @@
 from collections.abc import AsyncIterator, Callable
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, Sequence
 
-from domain.interfaces.product_repo import Repository
+from domain.interfaces.product_repo import ProductRepo, T
 from infrastructure.config.settings import ApiConfig
-from infrastructure.gateways.meupcnet.adapters.base import (
-    build_cookies,
-    build_form_token,
-    build_headers,
-)
+from infrastructure.gateways.meupcnet.auth import MeuPCAuthMixin
 from infrastructure.http.http_client import HttpClient
-
-T = TypeVar("T")
 
 
 class MeuPCApiError(Exception):
@@ -22,7 +16,7 @@ class MeuPCUnexpectedResponseError(MeuPCApiError):
         super().__init__(f"Unexpected response from MeuPC API: {response}")
 
 
-class BaseRepo(Repository[T], Generic[T]):
+class BaseRepo(MeuPCAuthMixin, ProductRepo[T], Generic[T]):
     def __init__(
         self,
         config: ApiConfig,
@@ -30,47 +24,16 @@ class BaseRepo(Repository[T], Generic[T]):
         adapter: Callable[[list[dict]], list[T]],
         params: dict | None = None,
     ):
-        self._http_client = http_client
-        self._url = config.url
-        self._path = ""
+        # Passes config and http_client up the MRO (Method Resolution Order)
+        super().__init__(config=config, http_client=http_client)
 
-        # Session
-        self._logged_in = False
-        self._csrf_token = None
-        self._meupc_token = None
-
-        # Request
-        self._headers = {}
-        self._cookies = None
-        self._form_token = None
         self._params = params
         self._adapter = adapter
-
-    async def _ensure_logged_in(self):
-        """
-        Captures ci_csrf_cookie and meupcnet from the Set-Cookie header
-        After sending a get request to the base API url
-        """
-        if not self._logged_in:
-            response = await self._http_client.get(self._url)
-
-            self._csrf_token = response.cookies.get("ci_csrf_cookie")
-            if not self._csrf_token:
-                raise MeuPCUnexpectedResponseError("Missing ci_csrf_cookie")
-
-            self._meupc_token = response.cookies.get("meupcnet")
-            if not self._meupc_token:
-                raise MeuPCUnexpectedResponseError("Missing meupcnet cookie")
-
-            self._cookies = build_cookies(self._csrf_token, self._meupc_token)
-            self._form_token = build_form_token(self._csrf_token)
-            self._logged_in = True
 
     async def get_all(self) -> AsyncIterator[T]:
         # Ensure login happens before building headers/payloads
         await self._ensure_logged_in()
 
-        self._headers = build_headers(self._path)
         clean_path = self._path.strip("/")
 
         payload = {
